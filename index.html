@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método Simplex y Gráfico</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Método Simplex y Gráfico</h1>
+
+    <!-- Entrada de datos -->
+    <section>
+        <h2>Datos del problema</h2>
+        <label>Número de variables: 
+            <input type="number" id="numVars" min="2" value="2">
+        </label>
+        <label>Número de restricciones: 
+            <input type="number" id="numRestricciones" min="1" value="2">
+        </label>
+        <button onclick="generarFormulario()">Generar Formulario</button>
+    </section>
+
+    <!-- Formulario dinámico -->
+    <form id="formProblema"></form>
+
+    <!-- Botones de ejecución -->
+    <section>
+        <button onclick="resolverGrafico()">Resolver por Método Gráfico</button>
+        <button onclick="resolverSimplex()">Resolver por Método Simplex</button>
+        <button onclick="analisisSensibilidad()">Análisis de Sensibilidad</button>
+    </section>
+
+    <!-- Resultados -->
+    <section>
+        <h2>Resultados</h2>
+        <div id="resultados"></div>
+    </section>
+
+    <!-- Gráfica -->
+    <section>
+        <h2>Gráfica (solo 2 variables)</h2>
+        <canvas id="grafico" width="500" height="400"></canvas>
+    </section>
+
+    <script src="app.js"></script>
+</body>
+</html>
