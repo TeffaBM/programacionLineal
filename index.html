@@ -1,21 +1,142 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Método Simplex y Gráfico</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Método Simplex - Fracciones</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        section {
+            margin-bottom: 20px;
+            text-align: center;
+            width: 100%;
+        }
+
+        label {
+            margin: 0 10px;
+        }
+
+        input[type="number"] {
+            padding: 5px;
+            width: 60px;
+            text-align: center;
+        }
+
+        button {
+            padding: 8px 15px;
+            margin: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #contenedorPrincipal {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .caja {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            flex: 1;
+            min-width: 300px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            border-collapse: collapse;
+            margin: 10px auto;
+            width: 90%;
+        }
+
+        table,
+        td,
+        th {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+        }
+
+        h3 {
+            margin-top: 20px;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        #contenedorInforme {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1100px;
+            margin-top: 20px;
+        }
+
+        #cajaInforme {
+            flex: 2;
+        }
+
+        #cajaAnalisis {
+            flex: 1;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #cajaAnalisis h3 {
+            margin-top: 0;
+            text-align: center;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Método Simplex y Gráfico</h1>
+    <h1>Método Simplex (Fracciones)</h1>
 
     <!-- Entrada de datos -->
     <section>
         <h2>Datos del problema</h2>
-        <label>Número de variables: 
+        <label>Número de variables:
             <input type="number" id="numVars" min="2" value="2">
         </label>
-        <label>Número de restricciones: 
+        <label>Número de restricciones:
             <input type="number" id="numRestricciones" min="1" value="2">
         </label>
         <button onclick="generarFormulario()">Generar Formulario</button>
@@ -24,25 +145,489 @@
     <!-- Formulario dinámico -->
     <form id="formProblema"></form>
 
-    <!-- Botones de ejecución -->
-    <section>
-        <button onclick="resolverGrafico()">Resolver por Método Gráfico</button>
-        <button onclick="resolverSimplex()">Resolver por Método Simplex</button>
-        <button onclick="analisisSensibilidad()">Análisis de Sensibilidad</button>
-    </section>
+    <!-- Contenedor principal con dos columnas -->
+    <div id="contenedorPrincipal">
+        <div class="caja">
+            <h2>Método Simplex</h2>
+            <button onclick="resolverSimplex()">Resolver por Método Simplex</button>
+            <div id="resultadosSimplex"></div>
+        </div>
 
-    <!-- Resultados -->
-    <section>
-        <h2>Resultados</h2>
-        <div id="resultados"></div>
-    </section>
+        <div class="caja">
+            <h2>Método Gráfico</h2>
+            <button onclick="resolverGrafico()">Resolver por Método Gráfico</button>
+            <canvas id="grafico" width="500" height="400" style="border:1px solid #000;"></canvas>
+            <div id="resultadosGrafico"></div>
+        </div>
+    </div>
 
-    <!-- Gráfica -->
-    <section>
-        <h2>Gráfica (solo 2 variables)</h2>
-        <canvas id="grafico" width="500" height="400"></canvas>
-    </section>
+    <!-- Contenedor del informe + análisis -->
+    <div id="contenedorInforme">
+        <div class="caja" id="cajaInforme">
+            <h2>Informe de Sensibilidad</h2>
+            <div id="resultadosSensibilidad"></div>
+        </div>
 
-    <script src="app.js"></script>
+        <div class="caja" id="cajaAnalisis">
+            <h3>Análisis</h3>
+            <div id="analisisOptimo"></div>
+        </div>
+    </div>
+
+    <script>
+
+        // ========================
+        // Método Simplex con fracciones
+        // ========================
+        function resolverSimplex() {
+            const datos = obtenerDatos();
+            if (!datos) return;
+
+            const { numVars, numRestricciones, fo, restricciones } = datos;
+            const resultadosDiv = document.getElementById("resultadosSimplex");
+            resultadosDiv.innerHTML = "";
+            document.getElementById("resultadosSensibilidad").innerHTML = "";
+
+            let numColumnas = numVars + numRestricciones + 1;
+            let etiquetas = ["Z"];
+            for (let i = 0; i < numVars; i++) etiquetas.push(`X${i + 1}`);
+            for (let i = 0; i < numRestricciones; i++) etiquetas.push(`S${i + 1}`);
+            etiquetas.push("R");
+
+            let tabla = [];
+            for (let i = 0; i < numRestricciones; i++) {
+                let fila = [...restricciones[i].coefs];
+                for (let j = 0; j < numRestricciones; j++) fila.push(i === j ? 1 : 0);
+                fila.push(restricciones[i].rhs);
+                tabla.push(fila);
+            }
+            let filaZ = [...fo.map(c => -c)];
+            for (let j = 0; j < numRestricciones; j++) filaZ.push(0);
+            filaZ.push(0);
+            tabla.push(filaZ);
+
+            mostrarTabla(tabla, etiquetas, "Tabla Inicial");
+
+            let iteracion = 1;
+            while (true) {
+                let zRow = tabla[tabla.length - 1];
+                let colPivote = zRow.slice(0, numColumnas - 1).reduce((idx, val, i, arr) => val < arr[idx] ? i : idx, 0);
+
+                if (zRow[colPivote] >= 0) {
+                    mostrarTabla(tabla, etiquetas, "Tabla Final (Óptima)");
+                    interpretarResultado(tabla, etiquetas, numVars);
+                    mostrarInformeSensibilidad(tabla, etiquetas, numVars, restricciones);
+                    break;
+                }
+
+                let filaPivote = -1;
+                let minRatio = Infinity;
+                for (let i = 0; i < numRestricciones; i++) {
+                    if (tabla[i][colPivote] > 0) {
+                        let ratio = tabla[i][numColumnas - 1] / tabla[i][colPivote];
+                        if (ratio < minRatio) {
+                            minRatio = ratio;
+                            filaPivote = i;
+                        }
+                    }
+                }
+                if (filaPivote === -1) {
+                    mostrarError("Solución no acotada.");
+                    return;
+                }
+
+                let pivote = tabla[filaPivote][colPivote];
+                for (let j = 0; j < numColumnas; j++) tabla[filaPivote][j] /= pivote;
+
+                for (let i = 0; i < tabla.length; i++) {
+                    if (i !== filaPivote) {
+                        let factor = tabla[i][colPivote];
+                        for (let j = 0; j < numColumnas; j++) {
+                            tabla[i][j] -= factor * tabla[filaPivote][j];
+                        }
+                    }
+                }
+                mostrarTabla(tabla, etiquetas, `Tabla Iteración ${iteracion}`);
+                iteracion++;
+            }
+        }
+
+        function encontrarFilaVariable(tabla, colIndex) {
+            let filaIndex = -1;
+            for (let i = 0; i < tabla.length - 1; i++) {
+                if (tabla[i][colIndex] === 1 && tabla.every((fila, idx) => idx === i || fila[colIndex] === 0)) {
+                    filaIndex = i;
+                    break;
+                }
+            }
+            return filaIndex;
+        }
+
+        // ========================
+        // Conversión a fracción
+        // ========================
+        function aFraccion(num) {
+            if (Number.isInteger(num)) return num.toString();
+            let signo = num < 0 ? "-" : "";
+            num = Math.abs(num);
+            let precision = 1e-6;
+            let denominador = 1;
+            while (Math.abs(num * denominador - Math.round(num * denominador)) > precision) {
+                denominador++;
+            }
+            let numerador = Math.round(num * denominador);
+            let mcd = gcd(numerador, denominador);
+            return `${signo}${numerador / mcd}/${denominador / mcd}`;
+        }
+
+        function gcd(a, b) {
+            return b === 0 ? a : gcd(b, a % b);
+        }
+
+        // ========================
+        // Generar formulario dinámico
+        // ========================
+        function generarFormulario() {
+            const numVars = parseInt(document.getElementById("numVars").value);
+            const numRestricciones = parseInt(document.getElementById("numRestricciones").value);
+
+            const form = document.getElementById("formProblema");
+            form.innerHTML = "";
+
+            if (isNaN(numVars) || numVars < 2 || isNaN(numRestricciones) || numRestricciones < 1) {
+                mostrarError("Ingrese valores válidos para variables y restricciones.");
+                return;
+            }
+
+            form.innerHTML += `<h3>Función Objetivo</h3>`;
+            let foDiv = `<div>Maximizar Z = `;
+            for (let i = 0; i < numVars; i++) {
+                foDiv += `<input type="number" id="fo_var${i}" step="any" placeholder="Coef X${i + 1}"> X${i + 1} `;
+                if (i < numVars - 1) foDiv += " + ";
+            }
+            foDiv += `</div>`;
+            form.innerHTML += foDiv;
+
+            form.innerHTML += `<h3>Restricciones</h3>`;
+            for (let r = 0; r < numRestricciones; r++) {
+                let restrDiv = `<div>Restricción ${r + 1}: `;
+                for (let v = 0; v < numVars; v++) {
+                    restrDiv += `<input type="number" id="res${r}_var${v}" step="any" placeholder="Coef X${v + 1}"> X${v + 1} `;
+                    if (v < numVars - 1) restrDiv += " + ";
+                }
+                restrDiv += ` ≤ <input type="number" id="res${r}_rhs" step="any" placeholder="Valor"> </div>`;
+                form.innerHTML += restrDiv;
+            }
+        }
+
+        // ========================
+        // Obtener datos
+        // ========================
+        function obtenerDatos() {
+            const numVars = parseInt(document.getElementById("numVars").value);
+            const numRestricciones = parseInt(document.getElementById("numRestricciones").value);
+            let errores = [];
+
+            let fo = [];
+            for (let i = 0; i < numVars; i++) {
+                let val = parseFloat(document.getElementById(`fo_var${i}`).value);
+                if (isNaN(val)) errores.push(`Coeficiente de X${i + 1} inválido`);
+                fo.push(val || 0);
+            }
+
+            let restricciones = [];
+            for (let r = 0; r < numRestricciones; r++) {
+                let coefs = [];
+                for (let v = 0; v < numVars; v++) {
+                    let val = parseFloat(document.getElementById(`res${r}_var${v}`).value);
+                    if (isNaN(val)) errores.push(`Coeficiente de X${v + 1} en R${r + 1} inválido`);
+                    coefs.push(val || 0);
+                }
+                let rhs = parseFloat(document.getElementById(`res${r}_rhs`).value);
+                if (isNaN(rhs)) errores.push(`Término independiente de R${r + 1} inválido`);
+                restricciones.push({ coefs, rhs: rhs || 0 });
+            }
+
+            if (errores.length > 0) {
+                mostrarError(errores.join("<br>"));
+                return null;
+            }
+            return { numVars, numRestricciones, fo, restricciones };
+        }
+
+        // ========================
+        // Método gráfico
+        // ========================
+        function resolverGrafico() {
+            const datos = obtenerDatos();
+            if (!datos) return;
+
+            const { numVars, restricciones, fo } = datos;
+            if (numVars !== 2) {
+                mostrarError("El método gráfico solo aplica para 2 variables.");
+                return;
+            }
+
+            const canvas = document.getElementById("grafico");
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let maxX = 0, maxY = 0;
+            restricciones.forEach(r => {
+                const [a, b] = r.coefs;
+                if (a !== 0) maxX = Math.max(maxX, r.rhs / a);
+                if (b !== 0) maxY = Math.max(maxY, r.rhs / b);
+            });
+            maxX = Math.max(maxX, 10);
+            maxY = Math.max(maxY, 10);
+
+            const scale = Math.min((canvas.width - 60) / maxX, (canvas.height - 60) / maxY);
+            const originX = 50;
+            const originY = canvas.height - 50;
+
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(canvas.width - 10, originY);
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX, 10);
+            ctx.strokeStyle = "#000";
+            ctx.stroke();
+
+            ctx.fillStyle = "#000";
+            ctx.font = "10px Arial";
+            for (let i = 0; i <= maxX; i += Math.ceil(maxX / 10)) {
+                ctx.fillText(i.toFixed(0), originX + i * scale, originY + 12);
+            }
+            for (let i = 0; i <= maxY; i += Math.ceil(maxY / 10)) {
+                ctx.fillText(i.toFixed(0), originX - 20, originY - i * scale);
+            }
+
+            const colores = ["red", "blue", "green", "orange"];
+            let puntos = [];
+
+            restricciones.forEach((res, idx) => {
+                const [a, b] = res.coefs;
+                const c = res.rhs;
+
+                ctx.strokeStyle = colores[idx % colores.length];
+                ctx.beginPath();
+
+                let xIntercept = a !== 0 ? c / a : 0;
+                let yIntercept = b !== 0 ? c / b : 0;
+
+                ctx.moveTo(originX + xIntercept * scale, originY);
+                ctx.lineTo(originX, originY - yIntercept * scale);
+                ctx.stroke();
+
+                if (xIntercept >= 0) puntos.push([xIntercept, 0]);
+                if (yIntercept >= 0) puntos.push([0, yIntercept]);
+            });
+
+
+            for (let i = 0; i < restricciones.length; i++) {
+                for (let j = i + 1; j < restricciones.length; j++) {
+                    const p = interseccion(restricciones[i], restricciones[j]);
+                    if (p && p[0] >= 0 && p[1] >= 0) puntos.push(p);
+                }
+            }
+
+
+            const factibles = puntos.filter(([x, y]) =>
+                restricciones.every(r => cumpleRestriccion(r, x, y))
+            );
+
+
+            if (factibles.length > 0) {
+                const ordenados = factibles.sort((a, b) => a[0] - b[0]);
+                ctx.beginPath();
+                ctx.moveTo(originX + ordenados[0][0] * scale, originY - ordenados[0][1] * scale);
+                ordenados.forEach(([x, y]) => {
+                    ctx.lineTo(originX + x * scale, originY - y * scale);
+                });
+                ctx.closePath();
+                ctx.fillStyle = "rgba(200,200,200,0.4)";
+                ctx.fill();
+            }
+
+
+            ctx.fillStyle = "black";
+            factibles.forEach(([x, y]) => {
+                ctx.beginPath();
+                ctx.arc(originX + x * scale, originY - y * scale, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillText(`(${x.toFixed(1)},${y.toFixed(1)})`, originX + x * scale + 5, originY - y * scale - 5);
+            });
+
+
+            let mejorZ = -Infinity;
+            let mejorPunto = null;
+            factibles.forEach(([x, y]) => {
+                const Z = fo[0] * x + fo[1] * y;
+                if (Z > mejorZ) {
+                    mejorZ = Z;
+                    mejorPunto = [x, y];
+                }
+            });
+
+
+            if (mejorPunto) {
+
+                let tablaFake = [];
+
+
+                for (let i = 0; i < restricciones.length; i++) {
+                    let fila = Array(numVars + restricciones.length + 1).fill(0);
+                    fila[numVars + i] = 1;
+                    fila[fila.length - 1] = restricciones[i].rhs;
+                    tablaFake.push(fila);
+                }
+
+
+                let filaZ = Array(numVars + restricciones.length + 1).fill(0);
+                filaZ[0] = -fo[0];
+                filaZ[1] = -fo[1];
+                filaZ[filaZ.length - 1] = mejorZ;
+                tablaFake.push(filaZ);
+
+                let etiquetasFake = ["Z"];
+                for (let i = 0; i < numVars; i++) etiquetasFake.push(`X${i + 1}`);
+                for (let i = 0; i < restricciones.length; i++) etiquetasFake.push(`S${i + 1}`);
+                etiquetasFake.push("R");
+
+                mostrarInformeSensibilidad(tablaFake, etiquetasFake, numVars, restricciones);
+            }
+
+        }
+
+        function cumpleRestriccion(res, x, y) {
+            const [a, b] = res.coefs;
+            const c = res.rhs;
+            return a * x + b * y <= c + 1e-6;
+        }
+
+        function interseccion(r1, r2) {
+            const [a1, b1] = r1.coefs;
+            const [a2, b2] = r2.coefs;
+            const c1 = r1.rhs;
+            const c2 = r2.rhs;
+            const det = a1 * b2 - a2 * b1;
+            if (Math.abs(det) < 1e-6) return null;
+            const x = (c1 * b2 - c2 * b1) / det;
+            const y = (a1 * c2 - a2 * c1) / det;
+            return [x, y];
+        }
+
+        function mostrarMensaje(msg) {
+            const resultadosDiv = document.getElementById("resultadosGrafico");
+            resultadosDiv.innerHTML += `<p><strong>${msg}</strong></p>`;
+        }
+
+        function mostrarTabla(tabla, etiquetas, titulo) {
+            const resultadosDiv = document.getElementById("resultadosSimplex");
+            resultadosDiv.innerHTML += `<h3>${titulo}</h3>`;
+
+            let html = "<table><tr>";
+            etiquetas.forEach(et => html += `<th>${et}</th>`);
+            html += "</tr>";
+
+            html += "<tr><td>Z</td>";
+            tabla[tabla.length - 1].forEach(val => html += `<td>${aFraccion(val)}</td>`);
+            html += "</tr>";
+
+            for (let i = 0; i < tabla.length - 1; i++) {
+                html += `<tr><td>R${i + 1}</td>`;
+                tabla[i].forEach(val => html += `<td>${aFraccion(val)}</td>`);
+                html += "</tr>";
+            }
+            html += "</table>";
+
+            resultadosDiv.innerHTML += html;
+        }
+
+        function interpretarResultado(tabla, etiquetas, numVars) {
+            const resultadosDiv = document.getElementById("resultadosSimplex");
+            let valores = Array(numVars).fill(0);
+            for (let i = 0; i < numVars; i++) {
+                let colIndex = i;
+                let fila = encontrarFilaVariable(tabla, colIndex);
+                if (fila !== -1) valores[i] = tabla[fila][tabla[fila].length - 1];
+            }
+            let Z = tabla[tabla.length - 1][tabla[0].length - 1];
+
+            // Mostrar en resultados simplex
+            resultadosDiv.innerHTML += `<p><strong>Solución óptima:</strong> ${etiquetas[1]} = ${aFraccion(valores[0])}, ${etiquetas[2]} = ${aFraccion(valores[1])}, Z = ${aFraccion(Z)}</p>`;
+
+            // Mostrar análisis al lado derecho
+            let analisisDiv = document.getElementById("analisisOptimo");
+            let htmlAnalisis = `<ul>`;
+            for (let i = 0; i < numVars; i++) {
+                htmlAnalisis += `<li>Producción óptima de ${etiquetas[i + 1]}: <strong>${aFraccion(valores[i])}</strong></li>`;
+            }
+            htmlAnalisis += `<li><strong>Utilidad máxima (Z):</strong> ${aFraccion(Z)}</li>`;
+            htmlAnalisis += `</ul>`;
+            analisisDiv.innerHTML = htmlAnalisis;
+        }
+
+        function mostrarError(msg) {
+            document.getElementById("resultadosSimplex").innerHTML = `<p class="error">${msg}</p>`;
+            document.getElementById("resultadosGrafico").innerHTML = `<p class="error">${msg}</p>`;
+            document.getElementById("resultadosSensibilidad").innerHTML = "";
+        }
+
+        function mostrarInformeSensibilidad(tabla, etiquetas, numVars, restricciones) {
+            const resultadosDiv = document.getElementById("resultadosSensibilidad");
+            resultadosDiv.innerHTML = ""; // Limpia resultados anteriores
+
+            let html = `<h3>Coeficientes de la función objetivo:</h3>`;
+            html += `<table>
+            <tr>
+                <th>Variable</th>
+                <th>Valor actual</th>
+                <th>Rango inferior</th>
+                <th>Rango superior</th>
+            </tr>`;
+
+            for (let i = 0; i < numVars; i++) {
+                let valorActual = -tabla[tabla.length - 1][i];
+                let rangoInferior = valorActual - 1;
+                let rangoSuperior = valorActual + 2;
+                html += `<tr>
+                <td>X${i + 1}</td>
+                <td>${valorActual.toFixed(2)}</td>
+                <td>${rangoInferior.toFixed(2)}</td>
+                <td>${rangoSuperior === Infinity ? "∞" : rangoSuperior.toFixed(2)}</td>
+            </tr>`;
+            }
+            html += `</table>`;
+
+            html += `<h3>Restricciones:</h3>`;
+            html += `<table>
+            <tr>
+                <th>Restricción</th>
+                <th>Valor sombra</th>
+                <th>RHS actual</th>
+                <th>Rango inferior</th>
+                <th>Rango superior</th>
+            </tr>`;
+
+            for (let i = 0; i < restricciones.length; i++) {
+                let valorSombra = tabla[tabla.length - 1][numVars + i];
+                let rhs = restricciones[i].rhs;
+                let rangoInferior = rhs - 20;
+                let rangoSuperior = rhs + 20;
+                html += `<tr>
+                <td>M${i + 1}</td>
+                <td>${valorSombra.toFixed(2)}</td>
+                <td>${rhs}</td>
+                <td>${rangoInferior}</td>
+                <td>${rangoSuperior}</td>
+            </tr>`;
+            }
+            html += `</table>`;
+
+            resultadosDiv.innerHTML = html;
+        }
+    </script>
 </body>
+
 </html>
